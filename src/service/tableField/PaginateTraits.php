@@ -8,6 +8,7 @@ use xjryanse\logic\Arrays2d;
 use xjryanse\uniform\service\UniformTableService;
 use xjryanse\universal\service\UniversalPageService;
 use xjryanse\wechat\service\WechatWeAppQrSceneService;
+use xjryanse\uniform\service\UniformTableDefaultPageService;
 use Exception;
 /**
  * 分页复用列表
@@ -24,27 +25,12 @@ trait PaginateTraits{
         $fields = self::tableIdFieldsArr($tableId);
         $tableName = UniformTableService::getInstance($tableId)->fTableNo();
         
-        // pc列表
-        $data['pcListKey']      = UniformTableService::defaultKeyPcList($tableName);
-        //PC详情
-        $data['pcDetailKey']    = UniformTableService::defaultKeyPcDetail($tableName);
-        //PC添加
-        $data['pcAddKey']       = UniformTableService::defaultKeyPcAdd($tableName);
-        //手机列表
-        $data['wListKey']       = UniformTableService::defaultKeyWList($tableName);
-        //手机详情
-        $data['wDetailKey']     = UniformTableService::defaultKeyWDetail($tableName);
-        //手机添加
-        $data['wAddKey']        = UniformTableService::defaultKeyWAdd($tableName);
-        //小程序列表
-        $data['mListKey']       = UniformTableService::defaultKeyMList($tableName);
-        // 小程序列表-我的
-        $data['mMyListKey']     = UniformTableService::defaultKeyMMyList($tableName);
-        //小程序详情
-        $data['mDetailKey']     = UniformTableService::defaultKeyMDetail($tableName);
-        //小程序添加
-        $data['mAddKey']        = UniformTableService::defaultKeyMAdd($tableName);
-        
+        $lists  = UniformTableDefaultPageService::lists();
+
+        $data = [];
+        foreach($lists as $v){
+            $data[$v['key']] = UniformTableService::defaultPageKey($tableName, $v['key']);
+        }
 
         $arrList = [];
         $tmp = [];

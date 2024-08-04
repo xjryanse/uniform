@@ -8,6 +8,7 @@ use xjryanse\universal\service\UniversalPageService;
 use xjryanse\universal\service\UniversalPageItemService;
 use xjryanse\universal\service\UniversalItemCellService;
 use xjryanse\user\service\UserAuthAccessService;
+use xjryanse\system\logic\ConfigLogic;
 use Exception;
 /**
  * 分页复用列表
@@ -79,7 +80,11 @@ trait DoTraits{
 
         $url    = '/Universal/'.Arrays::value($keys, 'pcListKey');
         $name   = Arrays::value($info, 'name');
-        return UserAuthAccessService::addAccess($name, $url);
+        // 后台菜单父级
+        $data = [];
+        $data['pid'] = ConfigLogic::config('uniformPcAdmPid');
+        
+        return UserAuthAccessService::addAccess($name, $url,'manage',$data);
     }
 
     public function doAddFrontWeAppMenu($param = []){
@@ -106,5 +111,27 @@ trait DoTraits{
         return UniversalItemCellService::saveGetId($lastCell);
         
     }
-    
+    /**
+     * 20231106：关闭前台菜单
+     */
+    public function doToggleAdmMenu(){
+        $tableNo = $this->fTableNo();
+        $admMenu = self::calAdmMenu($tableNo);
+        if(!$admMenu){
+            throw new Exception('菜单不存在，请先生成');
+        }
+        // 1变0；0变1
+        $status = $admMenu['status'] ? 0 : 1;
+        // 开变关，关变开
+        return UserAuthAccessService::getInstance($admMenu['id'])->updateRam(['status'=>$status]);
+    }
+
+    /**
+     * 
+     */
+    public function doInitTemplateWord () {
+        
+        return $this->initTemplateWord();
+    }
+
 }

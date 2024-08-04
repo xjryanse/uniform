@@ -4,7 +4,9 @@ namespace xjryanse\uniform\service\tableField;
 
 use xjryanse\logic\Arrays;
 use xjryanse\uniform\service\UniformTableRecordService;
+use xjryanse\uniform\service\UniformTableService;
 use xjryanse\universal\service\UniversalPageService;
+use xjryanse\uniform\service\UniformFieldService;
 /**
  * 分页复用列表
  */
@@ -12,10 +14,17 @@ trait TriggerTraits{
     /**
      * 停用
      */
-    public function extraPreDelete() {
+    public static function extraPreSave(&$data, $uuid) {
         self::stopUse(__METHOD__);
     }
 
+    public static function extraPreUpdate(&$data, $uuid) {
+        self::stopUse(__METHOD__);
+    }
+    
+    public function extraPreDelete() {
+        self::stopUse(__METHOD__);
+    }
     /**
      * 钩子-保存前
      */
@@ -34,7 +43,14 @@ trait TriggerTraits{
      * 钩子-更新前
      */
     public static function ramPreUpdate(&$data, $uuid) {
-        
+        if(Arrays::value($data, 'default_type') == 'enum' && !Arrays::value($data, 'default_option')){
+            $tableId    = self::getInstance($uuid)->fTableId();
+            $fieldId    = self::getInstance($uuid)->fFieldId();
+
+            $tableNo    = UniformTableService::getInstance($tableId)->fTableNo();
+            $field      = UniformFieldService::getInstance($fieldId)->fField();
+            $data['default_option'] = $tableNo.'_'.$field;
+        }
     }
 
     /**

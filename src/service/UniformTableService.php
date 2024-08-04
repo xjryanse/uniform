@@ -5,8 +5,9 @@ namespace xjryanse\uniform\service;
 use xjryanse\system\interfaces\MainModelInterface;
 use xjryanse\logic\Arrays;
 use xjryanse\logic\Arrays2d;
+use xjryanse\logic\Datetime;
 use xjryanse\universal\service\UniversalPageService;
-use xjryanse\user\service\UserAuthAccessService;
+use xjryanse\generate\service\GenerateTemplateService;
 use Exception;
 /**
  * 
@@ -15,7 +16,12 @@ class UniformTableService extends Base implements MainModelInterface {
 
     use \xjryanse\traits\InstTrait;
     use \xjryanse\traits\MainModelTrait;
+    use \xjryanse\traits\MainModelRamTrait;
+    use \xjryanse\traits\MainModelCacheTrait;
+    use \xjryanse\traits\MainModelCheckTrait;
+    use \xjryanse\traits\MainModelGroupTrait;
     use \xjryanse\traits\MainModelQueryTrait;
+
     use \xjryanse\traits\StaticModelTrait;
 
     protected static $mainModel;
@@ -41,9 +47,11 @@ class UniformTableService extends Base implements MainModelInterface {
                     $universalItemDetailCount = UniformUniversalItemDetailService::groupBatchCount('table_id', $ids);
 
                     foreach ($lists as &$v) {
-                        //表单字段数 
+                        // 表单字段数 
                         $v['tableFieldCount']           = Arrays::value($tableFieldCount, $v['id'], 0);
-                        //表单记录数 
+                        // 是否有表单字段
+                        $v['hasField']                  = $v['tableFieldCount'] ? 1 : 0;
+                        // 表单记录数 
                         $v['recordCount']               = Arrays::value($recordCount, $v['id'], 0);
                         // 页面表格字段数 
                         $v['universalItemTableCount']   = Arrays::value($universalItemTableCount, $v['id'], 0);
@@ -52,14 +60,32 @@ class UniformTableService extends Base implements MainModelInterface {
                         // 页面详情字段数
                         $v['universalItemDetailCount']  = Arrays::value($universalItemDetailCount, $v['id'], 0);
                         // 20230911是否有后台菜单
-                        $v['hasAdmMenu']                = self::calHasAdmMenu($v['table_no']);
+                        $admMenu = self::calAdmMenu($v['table_no']);
+                        $v['hasAdmMenu']                = $admMenu ? 1 :0;
+                        // 20231106:后台菜单是否打开
+                        $v['isAdmMenuOpen']             = $admMenu ? $admMenu['status'] : 0;
                         // 20230911是否有前台小程序菜单
                         $v['hasFrontWeAppMenu']         = self::calHasFrontWeAppMenu($v['table_no']);
                         // 20230911是否有前台公众号菜单
                         $v['hasFrontWePubMenu']         = self::calHasFrontWePubMenu($v['table_no']);
-
-                        $tables = self::tablePageKeys($v['table_no']);
-                        $v      = array_merge($v, $tables);
+                        // 20230926：是否付费活动？
+                        $v['needPrize']                 = $v['prize'] ? 1 : 0; 
+                        //小程序添加页（入口）
+                        $v['mAddKey']                   = 'm'.$v['table_no'].'Add';
+                        $v['mMyListKey']                = 'm'.$v['table_no'].'MyList';     
+                        // 20231019：给后台弹窗展示数据
+                        $v['pcListKey']                 = 'p'.$v['table_no'].'List';
+                        // 20230926：有开始时间
+                        $v['hasStartTime']              = $v['start_time'] ? 1 : 0; 
+                        // 20230926：有结束时间
+                        $v['hasEndTime']                = $v['end_time'] ? 1 : 0; 
+                        // 20231012：时间状态:0未开始；1进行中；2已结束
+                        $v['timeState']                 = Datetime::calTimeState(date('Y-m-d H:i:s'), [$v['start_time'],$v['end_time']]);
+                        
+                        // 20231018:生成word模板id
+                        $v['generateWordTplId']         = GenerateTemplateService::keyToId($v['table_no']);
+                        // 20231018：有word模板？
+                        $v['hasWordTpl']                = $v['generateWordTplId'] ? 1 : 0;
                     }
 
                     return $lists;
@@ -225,9 +251,10 @@ class UniformTableService extends Base implements MainModelInterface {
         // $fields     = $this->getFields();
         $fields     = UniformTableFieldService::tableIdFieldsArr($this->uuid);
         $repArr = [];
-        $repArr['cus_label']    = 'label';
-        $repArr['field']        = 'field';
-        $repArr['default_type'] = 'type';
+        $repArr['cus_label']        = 'label';
+        $repArr['field']            = 'field';
+        $repArr['default_type']     = 'type';
+        $repArr['default_option']   = 'option';
         $fieldArr               = Arrays2d::keyReplace($fields, $repArr);
 
         // 源页面信息
@@ -240,5 +267,15 @@ class UniformTableService extends Base implements MainModelInterface {
         $replaceArr[$rawPageInfo['base_table']] = $this->fTableNo();
         $res = UniversalPageService::getInstance($rawPageId)->copyPageReplaceField($newPageKey, $fieldArr, $replaceArr);
         return $res;
+    }
+    /**
+     * 初始化word模板
+     */
+    public function initTemplateWord(){
+        $info = $this->get();
+        
+        $data['file_key']   = $info['table_no'];
+        $data['cate']       = 'word';
+        return GenerateTemplateService::saveGetIdRam($data);
     }
 }

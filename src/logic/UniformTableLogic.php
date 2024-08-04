@@ -2,7 +2,7 @@
 
 namespace xjryanse\uniform\logic;
 
-use app\generate\service\GenerateTemplateService;
+use xjryanse\generate\service\GenerateTemplateService;
 use xjryanse\uniform\service\UniformTableService;
 use xjryanse\uniform\service\UniformRecordService;
 use xjryanse\uniform\service\UniformTableRecordService;
@@ -13,6 +13,7 @@ use xjryanse\logic\Strings;
 use xjryanse\logic\Arrays;
 use xjryanse\logic\Arrays2d;
 use think\facade\Request;
+use Exception;
 
 /**
  * 
@@ -165,16 +166,20 @@ class UniformTableLogic {
         $data['yearmonthDate'] = date('Y年m月d日', strtotime($data['create_time']));
 
         $templateId = GenerateTemplateService::keyToId($templateKey);
+        if(!$templateId){
+            throw new Exception('模板文件key'.$templateKey.'不存在');
+        }
+
         $res = GenerateTemplateService::getInstance($templateId)->generate($data);
-        $respData['url'] = $res['file_path'];
+        // http会被谷歌浏览器拦截无法下载
+        $respData['url'] = Request::domain() .'/'. $res['file_path'];
         //文件名带后缀
         $tableInfo = $this->tableInfo();
-        $respData['fileName'] = Strings::dataReplace($tableInfo['word_name'], $data) . '.doc';
+        $respData['fileName'] = Strings::dataReplace($tableInfo['word_name'], $data) . '.docx';
 
         return $respData;
     }
-    
-    
+
     /**
      * 20230717：处理属性数据(数组)
      * @param type $data

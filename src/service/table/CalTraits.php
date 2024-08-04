@@ -9,20 +9,19 @@ use xjryanse\universal\service\UniversalItemCellService;
  * 计算类1
  */
 trait CalTraits{
-    /**
-     * 计算是否有后台菜单
-     * @param type $tableNo
-     * @return int
+    /*
+     * 计算后台菜单
      */
-    public static function calHasAdmMenu($tableNo){
+    public static function calAdmMenu($tableNo){
         $keys = self::calDefaultPageKeys($tableNo);        
         
         $url = '/Universal/'.Arrays::value($keys, 'pcListKey');
-        
+
         $con    = [];
         $con[]  = ['url','=',$url];
-        return UserAuthAccessService::staticConFind($con) ? 1: 0;
+        return UserAuthAccessService::staticConFind($con);
     }
+    
     /**
      * 计算是否有小程序前台菜单
      * @param type $tableNo
